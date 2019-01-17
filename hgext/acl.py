@@ -146,7 +146,9 @@ Example Configuration
   # will have write access to any file under the "resources" folder
   # (except for 1 file. See acl.deny):
   src/main/resources/** = *
-
+  [acl.message]
+  #Users can give custom messages in ACL Error
+  acl_message="custom user message can be given here"
   .hgtags = release_engineer
 
 Examples using the "!" prefix
@@ -270,7 +272,7 @@ def hook(ui, repo, hooktype, node=None, source=None, **kwargs):
         source not in ui.config('acl', 'sources', 'serve').split()):
         ui.debug('acl: changes have source "%s" - skipping\n' % source)
         return
-
+    
     user = None
     if source == 'serve' and 'url' in kwargs:
         url = kwargs['url'].split(':')
@@ -286,7 +288,7 @@ def hook(ui, repo, hooktype, node=None, source=None, **kwargs):
     if cfg:
         ui.readconfig(cfg, sections = ['acl.groups', 'acl.allow.branches',
         'acl.deny.branches', 'acl.allow', 'acl.deny'])
-
+    
     allowbranches = buildmatch(ui, None, user, 'acl.allow.branches')
     denybranches = buildmatch(ui, None, user, 'acl.deny.branches')
     allow = buildmatch(ui, repo, user, 'acl.allow')
@@ -299,10 +301,12 @@ def hook(ui, repo, hooktype, node=None, source=None, **kwargs):
             raise util.Abort(_('acl: user "%s" denied on branch "%s"'
                                ' (changeset "%s")')
                                % (user, branch, ctx))
+        if acl.message:
+          custom_message = acl.message.custom_message
         if allowbranches and not allowbranches(branch):
             raise util.Abort(_('acl: user "%s" not allowed on branch "%s"'
-                               ' (changeset "%s")')
-                               % (user, branch, ctx))
+                               ' (changeset "%s") , %s')
+                               % (user, branch, ctx, custom_message))
         ui.debug('acl: branch access granted: "%s" on branch "%s"\n'
         % (ctx, branch))
 
